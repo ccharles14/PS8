@@ -1,0 +1,83 @@
+************************************************************************************** 
+Test 1: controle sur la direction et avance simple 
+ 
+#include <wiringPi.h> 
+  
+int main () 
+{ 
+int i=0; 
+wiringPiSetup(); 
+pinMode(24,PWM_OUTPUT); 
+pinMode(26,PWM_OUTPUT); 
+pwmSetMode(PWM_MODE_MS); 
+pwmSetRange(1000); 
+pwmSetClock(308); 
+pwmWrite(26,92);//direction 
+pwmWrite(24,92);//vitesse 
+  
+  
+pwmWrite (24,);//vitesse 
+delay(3000);//en ms 
+pwmWrite (24,92);//vitesse 
+delay(3000);//en ms 
+pwmWrite (24,100);//vitesse 
+delay(3000); 
+pwmWrite (24,93);//vitesse 
+  
+return 0; 
+} 
+**************************************************************************************  
+#include <wiringPi.h> 
+  
+  
+  
+//cette fonction initialise la fréquence du signal PWM 
+void init() 
+{ 
+  
+pwmSetMode(PWM_MODE_MS); 
+pwmSetRange(1000); 
+pwmSetClock(308);//période de 16ms 
+} 
+  
+  
+//Cette fonction permet de controler le niveau du moteur 
+// 93>>>>>>>pas de sortie 
+//65>>>>>>>>reculer à la vitesse maximale 
+//120>>>>>>>>avancer à la vitesse maximale 
+void vitesse(int voie, int niveau) 
+{ 
+pinMode(voie,PWM_OUTPUT);//choix de la mode de broche 
+pwmWrite(voie,niveau);// la broche 'voie' génère  un signal 
+} 
+  
+  
+//Cette fonction permet de changer la direction 
+//112>>>>>>gauche 
+//93>>>>>>>droit 
+//72>>>>>>droite 
+void direction(int voie,int direction ) 
+{ 
+pinMode(voie,PWM_OUTPUT);//choix de la mode de broche 
+pwmWrite(voie,direction);// la broche 'voie' génère  un signal 
+} 
+  
+  
+  
+void main() 
+{ 
+wiringPiSetup(); 
+init(); 
+direction(26,110); 
+vitesse(24,105); 
+delay(1000); 
+vitesse(24,93); 
+  
+  
+} 
+ 
+ 
+ 
+ 
+ 
+ 
