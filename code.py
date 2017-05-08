@@ -26,6 +26,8 @@ ECHO = 24               #ultralsound echo
 GPIO.setup(TRIG, GPIO.OUT)
 GPIO.setup(ECHO, GPIO.IN)
 
+speed_stop=9
+speed_forward=9.48
 '''//?-8.59>>>>>>>pas de sortie(alimente par la voiture) 
    //?>>>>>>>>reculer a la vitesse maximale 
    //8.6>>>>>>>>avancer a la vitesse minimale /9.4 si alimente par chargeur'''
@@ -35,17 +37,13 @@ GPIO.setup(ECHO, GPIO.IN)
    //8.8>>>>>>>droit 
    //7.2>>>>>>droite '''
 pd.start(8.8)#direction=straight
-pv.start(9.0)#speed=0
-#pv.start(8)#speed=0
+pv.start(speed_stop)#speed=0
  
 # initialize the camera and grab a reference to the raw camera capture
 camera = PiCamera()
 camera.resolution = (640, 480)
 camera.framerate = 32
 rawCapture = PiRGBArray(camera, size=(640, 480))
- 
-
-
 time.sleep(3)#wait for 3 sec before the start
 
 
@@ -53,6 +51,10 @@ time.sleep(3)#wait for 3 sec before the start
  
 # capture frames from the camera
 for frame in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
+        key = cv2.waitKey(1) & 0xFF
+        if key == ord("q"):#if button "q" is pressed, quit the loop
+               break 
+      
         GPIO.output(TRIG, False)
         time.sleep(.00001)
         GPIO.output(TRIG, True)
@@ -78,7 +80,7 @@ for frame in camera.capture_continuous(rawCapture, format="bgr", use_video_port=
                         image = frame.array
                         #white line detection
                         image0=image.copy()
-                        traite=image0[400:480, 0:600]
+                        traite=image0[300:480, 0:600]
                         gray0=cv2.cvtColor(traite,cv2.COLOR_BGR2GRAY)# convert the bgr image to gray scale
                         blur=cv2.GaussianBlur(gray0,(5,5),0)# gaussian blur
                         
@@ -97,7 +99,7 @@ for frame in camera.capture_continuous(rawCapture, format="bgr", use_video_port=
                                 cx=300
                                 cy=0
                             cv2.line(image0,(cx,0),(cx,480),(255,0,0),1)#draw the lines to illustrate the centre
-                            cv2.line(image0,(0,cy+400),(600,cy+400),(255,0,0),1)
+                            cv2.line(image0,(0,cy+300),(600,cy+300),(255,0,0),1)
 
                             cv2.drawContours(traite,contours,-1,(0,255,0),3)
                         if status=='move':    
@@ -183,8 +185,7 @@ for frame in camera.capture_continuous(rawCapture, format="bgr", use_video_port=
                         pv.ChangeDutyCycle(9)
                         cv2.imshow("Frame", image0)
                         time.sleep(3)
-                        if key == ord("q"):#if button "q" is pressed, quit the loop
-                                break
+                        
 pv.stop()
 pd.stop()
 GPIO.cleanup()
