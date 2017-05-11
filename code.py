@@ -1,3 +1,4 @@
+
 # import the necessary packages
 from picamera.array import PiRGBArray
 from picamera import PiCamera
@@ -27,10 +28,12 @@ GPIO.setup(TRIG, GPIO.OUT)
 GPIO.setup(ECHO, GPIO.IN)
 
 speed_stop=9
-speed_forward=9.48
+speed_forward=10.08
+
+
 '''//?-8.59>>>>>>>pas de sortie(alimente par la voiture) 
    //?>>>>>>>>reculer a la vitesse maximale 
-   //8.6>>>>>>>>avancer a la vitesse minimale /9.4 si alimente par chargeur'''
+   //9.6>>>>>>>>avancer a la vitesse minimale, valeur a tester '''
 
 
 '''//11.2>>>>>>gauche 
@@ -44,7 +47,7 @@ camera = PiCamera()
 camera.resolution = (640, 480)
 camera.framerate = 32
 rawCapture = PiRGBArray(camera, size=(640, 480))
-time.sleep(3)#wait for 3 sec before the start
+time.sleep(2)#wait for 2 sec before the start
 
 
 
@@ -73,52 +76,79 @@ for frame in camera.capture_continuous(rawCapture, format="bgr", use_video_port=
 
         distance = round(distance, 2)#keep 2 number after the decimal point
 
-        if distance>100:# if the area of 100cm in front of the car is empty, the car will analyse the traffic environment 
+        if distance>10:# if the area of 100cm in front of the car is empty, the car will analyse the traffic environment 
                 
                         # grab the raw NumPy array representing the image, then initialize the timestamp
                         # and occupied/unoccupied text
                         image = frame.array
-                        #white line detection
+                        #first white line detection. This part treat the line on the bottom of the image 
                         image0=image.copy()
-                        traite=image0[300:480, 0:600]
-                        gray0=cv2.cvtColor(traite,cv2.COLOR_BGR2GRAY)# convert the bgr image to gray scale
-                        blur=cv2.GaussianBlur(gray0,(5,5),0)# gaussian blur
-                        
-                        
-                        ret,thresh=cv2.threshold(blur,170,255,cv2.THRESH_BINARY)# threshold operation: keep the pixels light
-
-                        cont,contours,hierarchy=cv2.findContours(thresh,1,cv2.CHAIN_APPROX_NONE) #find contours for the white object
-                        cx=300
-                        if len(contours)>0:
-                            c=max(contours,key=cv2.contourArea)#find the biggest contour
-                            M=cv2.moments(c)
-                            if M['m00']>0:
-                                cx=int(M['m10']/M['m00'])#cordinate of the biggest contour's centre geometric
-                                cy=int(M['m01']/M['m00'])
+                        treat1=image0[400:480, 0:600]
+                        gray1=cv2.cvtColor(treat1,cv2.COLOR_BGR2GRAY)# convert the bgr image to gray scale
+                        blur1=cv2.GaussianBlur(gray1,(5,5),0)# gaussian blur
+                        ret,thresh1=cv2.threshold(blur1,160,255,cv2.THRESH_BINARY)# threshold operation: keep the pixels light
+                        cont,contours1,hierarchy=cv2.findContours(thresh1,1,cv2.CHAIN_APPROX_NONE) #find contours for the white object
+                        c1x=300
+                        c1y=0
+                        if len(contours1)>0:
+                            c1=max(contours1,key=cv2.contourArea)#find the biggest contour
+                            M1=cv2.moments(c1)#calculate the moment 
+                            if M1['m00']>0:
+                                c1x=int(M1['m10']/M1['m00'])#cordinate of the biggest contour's centre geometric
+                                c1y=int(M1['m01']/M1['m00'])
                             else:
-                                cx=300
-                                cy=0
-                            cv2.line(image0,(cx,0),(cx,480),(255,0,0),1)#draw the lines to illustrate the centre
-                            cv2.line(image0,(0,cy+300),(600,cy+300),(255,0,0),1)
+                                c1x=300
+                                c1y=0
+                            cv2.line(image0,(c1x,0),(c1x,480),(255,0,0),1)#draw the lines to illustrate the centre
+                            cv2.line(image0,(0,c1y+400),(600,c1y+400),(255,0,0),1)
+                            cv2.drawContours(treat1,contours1,-1,(0,255,0),3)
 
-                            cv2.drawContours(traite,contours,-1,(0,255,0),3)
-                        if status=='move':    
-                                if cx>=80 and cx<=220:
-                                 pd.ChangeDutyCycle(9.8)
-                                elif cx>=380 and cx<=520:
-                                 pd.ChangeDutyCycle(7.8)
-                                elif cx>520:
-                                 pd.ChangeDutyCycle(7.2)
-                                elif cx<80:
-                                 pd.ChangeDutyCycle(10.4)
-#                                if cx<200:
-#                                    pd.ChangeDutyCycle(9.8)
-#                                elif cx>400:
-#                                    pd.ChangeDutyCycle(7.8)
+                        #second white line detection. This part treat the line which is on the top of the first part
+                        treat2=image0[300:400, 0:600]
+                        gray2=cv2.cvtColor(treat2,cv2.COLOR_BGR2GRAY)# convert the bgr image to gray scale
+                        blur2=cv2.GaussianBlur(gray2,(5,5),0)# gaussian blur
+                        ret,thresh2=cv2.threshold(blur2,165,255,cv2.THRESH_BINARY)# threshold operation: keep the pixels light
+                        cont,contours2,hierarchy=cv2.findContours(thresh2,1,cv2.CHAIN_APPROX_NONE) #find contours for the white object
+                        c2x=300
+                        c2y=0
+                        if len(contours2)>0:
+                            c2=max(contours2,key=cv2.contourArea)#find the biggest contour
+                            M2=cv2.moments(c2)
+                            if M2['m00']>0:
+                                c2x=int(M2['m10']/M2['m00'])#cordinate of the biggest contour's centre geometric
+                                c2y=int(M2['m01']/M2['m00'])
+                            else:
+                                c2x=300
+                                c2y=0
+                            cv2.line(image0,(c2x,0),(c2x,480),(0,255,0),1)#draw the lines to illustrate the centre
+                            cv2.line(image0,(0,c2y+300),(600,c2y+300),(0,255,0),1)
+                            cv2.drawContours(treat2,contours2,-1,(0,255,0),3)
 
 
+                        if status=='move':
+                                #if the line far is too crooked, the car will turn around with the max angle in advance
+                                if c2x>480:
+                                        pd.ChangeDutyCycle(7.2)
+                                elif c2x<120:
+                                        pd.ChangeDutyCycle(11.2)
+                                #condition of the line close: 
                                 else:
-                                    pd.ChangeDutyCycle(8.8)
+                                        if c1x>=80 and c1x<=220:
+                                         pd.ChangeDutyCycle(9.8)
+                                        elif c1x>=380 and c1x<=520:
+                                         pd.ChangeDutyCycle(7.8)
+                                        elif c1x>520:
+                                         pd.ChangeDutyCycle(7.2)
+                                        elif c1x<80:
+                                         pd.ChangeDutyCycle(11.2)
+        #                                if cx<200:
+        #                                    pd.ChangeDutyCycle(9.8)
+        #                                elif cx>400:
+        #                                    pd.ChangeDutyCycle(7.8)
+
+
+                                        else:
+                                            pd.ChangeDutyCycle(8.8)
                   
                             
                         #end white line detecter
@@ -127,7 +157,7 @@ for frame in camera.capture_continuous(rawCapture, format="bgr", use_video_port=
                         image_red=image[0:400,200:600]#choose a part of the image to treat
 
                         hsv=cv2.cvtColor(image_red,cv2.COLOR_BGR2HSV)#convert the bgr to hsv
-                        lower_red1=np.array([0,50,50]) #choose the range of color which will will keep 
+                        lower_red1=np.array([0,50,50]) #choose the range of color which want to retain 
                         upper_red1=np.array([5,255,255])
                         lower_red2=np.array([178,50,50])
                         upper_red2=np.array([180,255,255])
@@ -140,7 +170,7 @@ for frame in camera.capture_continuous(rawCapture, format="bgr", use_video_port=
                         gray1=cv2.cvtColor(image_red,cv2.COLOR_BGR2GRAY)
                         ret,thresh1=cv2.threshold(gray1,127,255,0)
                         cont1,contour1,hierarchy=cv2.findContours(mask,1,cv2.CHAIN_APPROX_SIMPLE)
-                        if len(contour1)>0:#if some red object is found
+                        if len(contour1)>0:#if some red objects are found
                         
                                 cmax1=max(contour1,key=cv2.contourArea)#find the biggest red object
                                 (x,y),radius=cv2.minEnclosingCircle(cmax1)# calculate the smallest enclosing circle
@@ -151,17 +181,17 @@ for frame in camera.capture_continuous(rawCapture, format="bgr", use_video_port=
                                 
                                 radius=0
                         if status=='stop':
-                                if radius>155:
+                                if radius>25:
 
                                     time.sleep(3)
                                 else:
-                                    pv.ChangeDutyCycle(9.48)
+                                    pv.ChangeDutyCycle(speed_forward)
 
 
                                     status='move'
                         else:
-                                if radius>155:
-                                    pv.ChangeDutyCycle(9)
+                                if radius>25:
+                                    pv.ChangeDutyCycle(speed_stop)
                                     
                                     status='stop'
                                     time.sleep(3)
@@ -189,4 +219,5 @@ for frame in camera.capture_continuous(rawCapture, format="bgr", use_video_port=
 pv.stop()
 pd.stop()
 GPIO.cleanup()
+
 
